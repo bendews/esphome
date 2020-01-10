@@ -189,6 +189,24 @@ class LightColorValues {
   }
 
   /// Convert these light color values to an RGBWW representation with the given parameters.
+  void as_rgbw_ecct(float color_temperature_cw, float color_temperature_ww, float *red, float *green, float *blue,
+                float *warm_white) const {
+    if (cct_change_){
+      const float color_temp = clamp(this->color_temperature_, color_temperature_cw, color_temperature_ww);
+      const float ww_fraction = (color_temp - color_temperature_cw) / (color_temperature_ww - color_temperature_cw);
+      const float cw_fraction = 1.0f - ww_fraction;
+      const float max_cw_ww = std::max(ww_fraction, cw_fraction);
+      *red = this->state_ * this->white_ * (cw_fraction / max_cw_ww);
+      *green = this->state_ * this->white_ * (cw_fraction / max_cw_ww);
+      *blue = this->state_ * this->white_ * (cw_fraction / max_cw_ww);
+      *warm_white = this->state_ * this->white_ * (ww_fraction / max_cw_ww);
+    } else {
+      this->as_rgb(red, green, blue);
+    }
+
+  }
+
+  /// Convert these light color values to an RGBWW representation with the given parameters.
   void as_rgbww(float color_temperature_cw, float color_temperature_ww, float *red, float *green, float *blue,
                 float *cold_white, float *warm_white) const {
     this->as_rgb(red, green, blue);
@@ -257,6 +275,9 @@ class LightColorValues {
   void set_color_temperature(float color_temperature) {
     this->color_temperature_ = std::max(0.000001f, color_temperature);
   }
+  void set_cct_change(bool cct_change) {
+    this->cct_change_ = cct_change;
+  }
 
  protected:
   float state_;  ///< ON / OFF, float for transition
@@ -266,6 +287,7 @@ class LightColorValues {
   float blue_;
   float white_;
   float color_temperature_;  ///< Color Temperature in Mired
+  bool cct_change_;
 };
 
 }  // namespace light

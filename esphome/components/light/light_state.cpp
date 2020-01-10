@@ -279,11 +279,15 @@ void LightCall::perform() {
 
     if (this->color_temperature_.has_value()) {
       ESP_LOGD(TAG, "  Color Temperature: %.1f mireds", v.get_color_temperature());
+      v.set_cct_change(true);
+      v.set_white(v.get_brightness());
     }
 
     if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
       ESP_LOGD(TAG, "  Red=%.0f%%, Green=%.0f%%, Blue=%.0f%%", v.get_red() * 100.0f, v.get_green() * 100.0f,
                v.get_blue() * 100.0f);
+      v.set_cct_change(false);
+      v.set_white(0);
     }
     if (this->white_.has_value()) {
       ESP_LOGD(TAG, "  White Value: %.0f%%", v.get_white() * 100.0f);
@@ -687,6 +691,14 @@ void LightState::current_values_as_rgbw(float *red, float *green, float *blue, f
   *green = gamma_correct(*green, this->gamma_correct_);
   *blue = gamma_correct(*blue, this->gamma_correct_);
   *white = gamma_correct(*white, this->gamma_correct_);
+}
+void LightState::current_values_as_rgbw_ecct(float *red, float *green, float *blue, float *warm_white) {
+  auto traits = this->get_traits();
+  this->current_values.as_rgbw_ecct(traits.get_min_mireds(), traits.get_max_mireds(), red, green, blue, warm_white);
+  *red = gamma_correct(*red, this->gamma_correct_);
+  *green = gamma_correct(*green, this->gamma_correct_);
+  *blue = gamma_correct(*blue, this->gamma_correct_);
+  *warm_white = gamma_correct(*warm_white, this->gamma_correct_);
 }
 void LightState::current_values_as_rgbww(float *red, float *green, float *blue, float *cold_white, float *warm_white) {
   auto traits = this->get_traits();
